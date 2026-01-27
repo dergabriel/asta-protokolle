@@ -20,6 +20,7 @@
   chairperson: none,
   secretary: none,
   location: none,
+  start: none,
   awareness: none,
   cosigner: none,
   cosigner-name: none,
@@ -152,7 +153,7 @@
 
       #if (hours-manual == none) {
         last-time.update(time-string)
-        if (start-time.get() == none) {
+        if (start-time.final() == none) {
           start-time.update(time-string)
         }
       }
@@ -464,68 +465,6 @@
     ]
   ]
 
-  let no_online(time, long: false) = [
-    #context [
-      #let online-list = onl.get()
-      
-      #for name in online-list {
-        let status = get-status(name)
-        if (long) {
-          if (status == status-away-perm) {
-            add-warning("\"" + name-format(name, "warning") + "\" (online) left (--), but already left permanently (--)")
-          } else if (status != status-online) {
-            add-warning("\"" + name-format(name, "warning") + "\" (online) left (--), but was not online")
-          }
-
-          away.update(x => {
-            if (x.contains(name)) {
-              _ = x.remove(x.position(x => x == name))
-            }
-            return x
-          })
-          away-perm.update(x => {
-            if (not x.contains(name)) {
-              x.push(name)
-            }
-            return x
-          })
-        } else {
-          if (status == status-away) {
-            add-warning("\"" + name-format(name, "warning") + "\" (online) left (-), but was away anyways (-)")
-          } else if (status == status-away-perm) {
-            add-warning("\"" + name-format(name, "warning") + "\" (online) left (-), but already left permanently (--)")
-          } else if (status != status-online) {
-            add-warning("\"" + name-format(name, "warning") + "\" (online) left (-), but was not online")
-          }
-
-          away.update(x => {
-            if (not x.contains(name)) {
-              x.push(name)
-            }
-            return x
-          })
-        }
-      }
-      
-      onl.update(x => ())
-    ]
-    #context [
-      #let total-present = without-not-voting(pres.get()).len() + without-not-voting(onl.get()).len()
-      #let total-expected = total-present + without-not-voting(away.get()).len()
-      #let statement = [
-        _All online participants #translate("LEAVE" + if (long) { "_LONG" }, str(total-present), str(total-expected))_
-      ]
-
-      #if (time == none) {
-        statement
-      } else {
-        timed(time)[
-          #statement
-        ]
-      }
-    ]
-  ]
-
   let dec(time, content, args) = [
     #set par.line(number-clearance: 200pt)
     #let values = ()
@@ -567,14 +506,6 @@
       ]
       #context [
         #let total-present = pres.get().len() + onl.get().len()
-        
-        //!FIXME: Counting
-        // #if (total != total-present) {
-        //   add-warning(
-        //     str(total) + " people voted, but " + str(total-present) + " were present",
-        //     display: true,
-        //   )
-        // }
       ]
     ]
     #if (time != none) [#timed(time, dec-block)] else [#dec-block]
@@ -779,10 +710,6 @@
         [#date.display(date-format)]
       } else { [#date] }
 
-      [#body-name] 
-
-      [ #event-name]
-
       grid(
         columns: if (logo != none) { (auto, 1fr) } else { 1fr },
         align: horizon,
@@ -796,7 +723,7 @@
         },
         [
           #formatted-date\
-          #body-name: #event-name\
+          #body-name --- #event-name\
         ]
       )
   
@@ -804,7 +731,7 @@
     footer: context {
       let current-page = here().page()
       let page-count = (
-        counter(page).final().first() - if (warnings.final().len() > 0 and not hide-warnings) { 1 } else { 0 }
+        counter(page).final().first()
       )
       align(center, [Seite #current-page von #page-count])
     },
@@ -815,6 +742,7 @@
       bottom: 6cm,
     ),
     background: if (hole-mark) {
+      rotate(45deg, text(100pt, fill: luma(98%), "Entwurf"))
       place(
         left + top,
         dx: 5mm,
@@ -1065,16 +993,16 @@
           }
           if (show-arrival-time and arrives-later.keys().contains(x)) {
             if (arrives-later.at(x) == none) {
-              [ (#translate("DURING_EVENT"))]
+              [ (später dazugekommen)]
             } else {
-              [ (#translate("SINCE") #box[#arrives-later.at(x)])]
+              [ (seit #box[#arrives-later.at(x)])]
             }
           }
           if (show-arrival-time and arrives-later-online.keys().contains(x)) {
             if (arrives-later-online.at(x) == none) {
-              [ (online, #translate("DURING_EVENT"))]
+              [ (online, später dazugekommen)]
             } else {
-              [ (online, #translate("SINCE") #box[#arrives-later-online.at(x)])]
+              [ (online, seit #box[#arrives-later-online.at(x)])]
             }
           }
         })
@@ -1089,10 +1017,11 @@
     none
   }
 
-    [
-      #if location != none [*Ort*: #location\ ]
+    context [
       *Sitzungsleitung*: #formatted-chairperson\
       *Protokoll*: #formatted-secretary\
+      #if location != none [*Ort*: #location\ ]
+      #if date != none [*Datum*: #date, #start -- #box[#format-time(last-time.final())]]
       #if formatted-awareness != none [*Awareness*: #formatted-awareness\ ]
 
       *Anwesend*:
@@ -1103,11 +1032,11 @@
       ]
 
       #context {
-        let start-time = start-time.final()
-        if (start-time != none) [*Beginn der Sitzung*: #format-time(start-time)\ ]
+        // let start-time = start-time.final()
+        // if (start-time != none) [*Beginn der Sitzung*: #format-time(start-time)\ ]
 
-        let end-time = last-time.final()
-        if (end-time != none) [*Ende der Sitzung*: #format-time(end-time)]
+        // let end-time = last-time.final()
+        // if (end-time != none) [*Ende der Sitzung*: #format-time(end-time)]
       }
     ]
 
@@ -1162,7 +1091,7 @@
   if (signing) {
     block(breakable: false)[
       #v(3cm)
-      #translate("SIGNATURE_PRE"):
+      Annahme des Protokolls:
 
       #v(1cm)
       #grid(
@@ -1170,46 +1099,16 @@
         align: center,
         gutter: 0.65em,
         line(length: 100%, stroke: 0.5pt), line(length: 100%, stroke: 0.5pt), line(length: 100%, stroke: 0.5pt),
-        [#translate("PLACE_DATE")],
-        [#translate("SIGNATURE") #if (cosigner == none) [#translate("CHAIR")] else [#cosigner]],
-        [#translate("SIGNATURE") #translate("PROTOCOL")],
-
-        [],
-        if (cosigner == none) {
-          if (chairperson == none) {
-            name-format("MISSING", "signature")
-          } else if (type(chairperson) == str) {
-            name-format(chairperson, "signature")
-          } else {
-            chairperson.map(x => name-format(x, "signature")).join("\n")
-          }
-        } else {
-          name-format(
-            if (cosigner-name == none) {
-              "MISSING"
-              add-warning("cosigner-name is missing")
-            } else {
-              cosigner-name
-            },
-            "signature",
-          )
-        },
-        if (secretary == none) {
-          name-format("MISSING", "signature")
-        } else if (type(secretary) == str) {
-          name-format(secretary, "signature")
-        } else {
-          secretary.map(x => name-format(x, "signature")).join("\n")
-        },
+        [Ort, Datum],
       )
     ]
   }
 
   // Hinweise
-  context {
-    if (warnings.get().len() > 0) {
-      set page(header: none, footer: none, margin: 2cm, numbering: none)
-      render-warnings()
-    }
-  }
+  // context {
+  //   if (warnings.get().len() > 0) {
+  //     set page(header: none, footer: none, margin: 2cm, numbering: none)
+  //     render-warnings()
+  //   }
+  // }
 }
