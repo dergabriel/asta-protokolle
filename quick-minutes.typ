@@ -40,6 +40,8 @@
   hide-warnings: false,
   warning-color: red,
   enable-help-text: true,
+  preamble: "",
+  watermark: "",
   body,
 ) = {
   // Constants
@@ -195,7 +197,8 @@
   )
 
   let pretty-name-connect(names, type-id) = {
-    if (names.len() == 1) {
+    if (names.len() == 0) {
+    } else if (names.len() == 1) {
       names.at(0)
     } else {
       names.slice(0, -1).join(", ") + " und " + names.at(-1)
@@ -742,7 +745,7 @@
       bottom: 6cm,
     ),
     background: if (hole-mark) {
-      rotate(45deg, text(100pt, fill: luma(98%), "Entwurf"))
+      rotate(45deg, text(100pt, fill: luma(98%), watermark))
       place(
         left + top,
         dx: 5mm,
@@ -830,76 +833,6 @@
   for person in online {
     if (not people.contains(person)) {
       add-warning("\"" + person + "\" is in online list but not in people list")
-    }
-  }
-
-  if (awareness != none) {
-    if (type(awareness) == str) {
-      awareness = format-name-no-context(awareness)
-      if (not present.contains(awareness)) {
-        present.insert(0, awareness)
-      }
-    } else {
-      for person in awareness {
-        person = format-name-no-context(person)
-        if (not present.contains(person)) {
-          present.insert(0, person)
-        }
-      }
-    }
-  }
-  if (secretary != none) {
-    if (type(secretary) == str) {
-      if (not present.contains(secretary)) {
-        present.insert(0, secretary)
-      }
-    } else {
-      for person in secretary {
-        if (not present.contains(person)) {
-          present.insert(0, person)
-        }
-      }
-    }
-  }
-  if (chairperson != none) {
-    if (type(chairperson) == str) {
-      if (not present.contains(chairperson)) {
-        present.insert(0, chairperson)
-      }
-    } else {
-      for person in chairperson {
-        if (not present.contains(person)) {
-          present.insert(0, person)
-        }
-      }
-    }
-  }
-
-  let formatted-chairperson = if (chairperson == none) [
-    #custom-name-style("MISSING", "header")
-    #add-warning("chairperson is missing")
-  ] else if (type(chairperson) == str) {
-    [#name-format(format-name-no-context(chairperson), "header")]
-  } else {
-    [#pretty-name-connect(chairperson, "header")]
-  }
-
-  let formatted-secretary = if (secretary == none) [
-    #custom-name-style("MISSING", "header")
-    #add-warning("secretary is missing")
-  ] else if (type(secretary) == str) {
-    [#name-format(format-name-no-context(secretary), "header")]
-  } else {
-    [#pretty-name-connect(secretary, "header")]
-  }
-
-  let formatted-awareness = if (awareness == none) {
-    none
-  } else {
-    if (type(awareness) == str) {
-      [#name-format(format-name-no-context(awareness), "header")]
-    } else {
-      [#pretty-name-connect(awareness, "header")]
     }
   }
 
@@ -1018,11 +951,10 @@
   }
 
     context [
-      *Sitzungsleitung*: #formatted-chairperson\
-      *Protokoll*: #formatted-secretary\
+      #if chairperson != none [*Sitzungsleitung*: #chairperson\ ]
+      #if secretary != none [*Protokoll*: #secretary\ ]
       #if location != none [*Ort*: #location\ ]
       #if date != none [*Datum*: #date, #start -- #box[#format-time(last-time.final())]]
-      #if formatted-awareness != none [*Awareness*: #formatted-awareness\ ]
 
       *Anwesend*:
       #v(-0.5em)
@@ -1053,6 +985,8 @@
     ]
 
   pagebreak()
+
+  [_#preamble _]
 
   context {
     let start-time = start-time.final()
