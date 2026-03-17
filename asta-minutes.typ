@@ -56,7 +56,9 @@
   anwesend: (),               // Kürzel anwesender Referate, z.B. ("digitales", "finanzen")
   entschuldigt: (),           // Kürzel entschuldigter Referate
   ags-anwesend: (),           // Kürzel anwesender AGs
+  ags-entschuldigt: (),       // Kürzel entschuldigter AGs (keine Stimmrechte)
   gewerbliche-anwesend: (),   // Kürzel anwesender gewerblicher Referate (keine Stimmrechte)
+  gewerbliche-entschuldigt: (), // Kürzel entschuldigter gewerblicher Referate (keine Stimmrechte)
   gaeste: (),                 // Freitextliste externer Gäst*innen, z.B. ("Vito (IJV)",)
 
   // Personen
@@ -95,11 +97,13 @@
   // Normalisiert einen Parameter zu einem Array (falls versehentlich als String übergeben)
   let ensure-array(x) = if type(x) == array { x } else if x == none { () } else { (x,) }
 
-  let anwesend           = ensure-array(anwesend)
-  let entschuldigt       = ensure-array(entschuldigt)
-  let ags-anwesend       = ensure-array(ags-anwesend)
-  let gewerbliche-anwesend = ensure-array(gewerbliche-anwesend)
-  let gaeste             = ensure-array(gaeste)
+  let anwesend                 = ensure-array(anwesend)
+  let entschuldigt             = ensure-array(entschuldigt)
+  let ags-anwesend             = ensure-array(ags-anwesend)
+  let ags-entschuldigt         = ensure-array(ags-entschuldigt)
+  let gewerbliche-anwesend     = ensure-array(gewerbliche-anwesend)
+  let gewerbliche-entschuldigt = ensure-array(gewerbliche-entschuldigt)
+  let gaeste                   = ensure-array(gaeste)
 
   // ── Konstanten ──────────────────────────────────────────────────────────
   let status-present = "present"
@@ -290,9 +294,19 @@
     if namen == none or namen.len() == 0 { [#rname] } else { [#namen (#rname)] }
   }
 
-  // Beschlussfähigkeit berechnen
+  // Besetzte Referate/AGs: nur solche mit mindestens einer Person in der DB
+  let besetzte-referate = referate.keys().filter(k =>
+    ensure-array(referate.at(k).personen).filter(p => type(p) == dictionary).len() > 0
+  )
+  let besetzte-ags-gew = (ags-db.keys() + gewerbliche-db.keys()).filter(k => {
+    let personen = if ags-db.keys().contains(k) { ags-db.at(k).personen }
+                  else { gewerbliche-db.at(k).personen }
+    ensure-array(personen).filter(p => type(p) == dictionary).len() > 0
+  })
+
+  // Beschlussfähigkeit berechnen (nur besetzte Referate zählen)
   let beschlussfaehig(anwesend-list) = {
-    let total = referate.keys().len()
+    let total = besetzte-referate.len()
     let n = anwesend-list.len()
     return (n, total, n * 2 > total)
   }
@@ -379,7 +393,7 @@
   }
 
   // ── Abstimmungen ─────────────────────────────────────────────────────────
-  let dec(time, content, args) = {
+  let dec(time, content, args, beschluss: none) = {
     let values = if args.values().all(x => type(x) == array) {
       args.keys().map(x => (name: x, value: int(args.at(x).at(0)), color: args.at(x).at(1)))
     } else {
@@ -388,6 +402,10 @@
     let total = values.map(x => x.value).sum(default: 1)
     let dec-block = block(breakable: false, inset: (left: if indent-decisions { 2em } else { 0pt }))[
       ===== Abstimmung: #content
+      #if beschluss != none [
+        #v(0.2em)
+        #emph[Beschluss: #beschluss]
+      ]
       #if fancy-decisions and values.at(0).keys().contains("color") [
         #grid(
           gutter: 2pt,
@@ -473,9 +491,16 @@
   let entschuldigt-parsed = entschuldigt.map(parse-anwesend-entry)
   let entschuldigt-keys = entschuldigt-parsed.map(e => e.at(0))
 
-  let alle-referate = referate.keys()
-  let unentschuldigt = alle-referate.filter(k =>
+  // Nur besetzte Referate in unentschuldigt aufführen
+  let unentschuldigt = besetzte-referate.filter(k =>
     not anwesend-keys.contains(k) and not entschuldigt-keys.contains(k)
+  )
+
+  // AGs und gewerbliche Referate ohne Stimmrecht: nur besetzte, fehlend = weder anwesend noch entschuldigt
+  let ags-gew-anwesend = ags-anwesend + gewerbliche-anwesend
+  let ags-gew-entschuldigt = ags-entschuldigt + gewerbliche-entschuldigt
+  let ags-gew-unentschuldigt = besetzte-ags-gew.filter(k =>
+    not ags-gew-anwesend.contains(k) and not ags-gew-entschuldigt.contains(k)
   )
 
   let (n-anwesend, n-gesamt, bf) = beschlussfaehig(anwesend-keys)
@@ -523,6 +548,16 @@
       [*Unentschuldigt:*],
       if unentschuldigt.len() == 0 [_(keine)_] else {
         names-list(unentschuldigt.map(ref-list-entry))
+      },
+
+      [*Entsch. (o. SR):*],
+      if ags-gew-entschuldigt.len() == 0 [_(keine)_] else {
+        names-list(ags-gew-entschuldigt.map(ref-list-entry))
+      },
+
+      [*Unentsch. (o. SR):*],
+      if ags-gew-unentschuldigt.len() == 0 [_(keine)_] else {
+        names-list(ags-gew-unentschuldigt.map(ref-list-entry))
       },
 
       [*Gäst\*innen:*],
@@ -584,18 +619,14 @@
       if formal [
         #set text(size: 8pt)
         #grid(
-          columns: (1fr, 1fr),
+          columns: (1fr, auto),
           gutter: 1em,
           [
             AStA Hochschule Darmstadt, Campus Darmstadt\
             Schöfferstraße 3, 64295 Darmstadt\
             Tel.: 06151 533 5630, info\@asta-hda.de
           ],
-          [
-            AStA Hochschule Darmstadt, Campus Dieburg\
-            Max-Planck-Straße 2, 64708 Dieburg\
-            Tel.: 06151 533 5631, dieburg\@asta-hda.de
-          ],
+          align(right + horizon)[Seite #current-page von #page-count],
         )
       ] else [
         #align(center)[Seite #current-page von #page-count]
@@ -632,8 +663,8 @@
       return
     }
 
-    // Nichtöffentlicher Sitzungsteil
-    if text-content.contains("Nichtöffentlicher") {
+    // Nicht öffentlicher Sitzungsteil
+    if text-content.contains("Nicht öffentlicher") {
       [
         #v(1em)
         #line(length: 100%, stroke: 0.5pt)
@@ -757,18 +788,31 @@
 
   // Abstimmungen: !Antrag XYZ/einstimmig  oder  !Antrag/9/0/2
   show regex("^!(" + regex-time-format + "/)?[^/\n]+(/[^\n]+)+"): it => {
+    // Beschlusstext: optional als letztes /-Segment wenn es kein reines Zahlen/Label-Segment ist.
     let text-content = it.text.replace("-/", "%slash%").slice(1)
     let first = text-content.split("/").at(0)
     let args-slice = if first.match(regex("^" + regex-time-format + "$")) != none { 2 } else { 1 }
     let vote-time = if args-slice == 2 { first } else { none }
     let vote-text = text-content.split("/").at(args-slice - 1).replace("%slash%", "/")
-    let raw-args = text-content.split("/").slice(args-slice)
+    let all-args = text-content.split("/").slice(args-slice)
+    // Beschlusstext: letztes Segment, wenn es kein reines Abstimmungssegment ist.
+    // Abstimmungssegment = nur Ziffern (+ optionales Label-Prefix), oder "einstimmig".
+    // Syntax: !Antrag/9/0/2/Beschlusstext  oder  !Antrag/einstimmig/Beschlusstext
+    let is-vote-segment(s) = s.trim() == "einstimmig" or s.trim().match(regex("^[^0-9]*[0-9]+$")) != none
+    let vote-beschluss = if all-args.len() > 0 and not is-vote-segment(all-args.last()) {
+      all-args.last()
+    } else { none }
+    let raw-args = if vote-beschluss != none { all-args.slice(0, -1) } else { all-args }
 
     // Einstimmig-Sonderfall
     if raw-args.len() == 1 and raw-args.at(0).trim() == "einstimmig" {
       v(2em, weak: true)
       block(breakable: false, inset: (left: if indent-decisions { 2em } else { 0pt }))[
         ===== Abstimmung #vote-text
+        #if vote-beschluss != none [
+          #v(0.2em)
+          #emph[Beschluss: #vote-beschluss]
+        ]
         #v(0.3em)
         *einstimmig angenommen*
       ]
@@ -795,7 +839,7 @@
         let yes = args.values().at(0)
         let no = args.values().at(1)
         let abst = args.values().at(2)
-        dec(vote-time, vote-text, ("Dafür": (yes, green), "Dagegen": (no, red), "Enthaltung": (abst, blue)))
+        dec(vote-time, vote-text, ("Dafür": (yes, green), "Dagegen": (no, red), "Enthaltung": (abst, blue)), beschluss: vote-beschluss)
       } else {
         // Freie Labels: "Ja 9/Enthaltung 2"
         let named-args = raw-args.fold((:), (acc, x) => {
@@ -805,7 +849,7 @@
           acc.insert(label, value)
           return acc
         })
-        dec(vote-time, vote-text, named-args)
+        dec(vote-time, vote-text, named-args, beschluss: vote-beschluss)
       }
     }
   }
@@ -827,6 +871,8 @@
 
   // Protokollkopf
   protokollkopf
+
+  pagebreak()
 
   // Zeilenabstand vor Tagesordnung
   pad(y: 1.5em)[
