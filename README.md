@@ -1,109 +1,267 @@
-# Quick Minutes
+# quick-asta
 
-With Quick Minutes you can record any meeting event by just typing it out. No function calls needed!
+**Typst-Protokollvorlage für AStA-Sitzungen der Hochschule Darmstadt.**
 
-## Usage
+Fork von [quick-minutes](https://github.com/Lypsilonx/quick-minutes) (v1.2.4) – angepasst auf die Strukturen des AStA mit Referaten, AGs und zentraler Personendatenbank.
 
-### Import & Initialisation
-```typ
-#import "@preview/quick-minutes:1.2.4": *
+---
 
-#show: minutes.with(
-  chairperson: "Name 1",
-  secretary: "Name 2",
-  date: auto,
-  body-name: "Organisation",
-  event-name: "Event",
-  present: (
-    "Name 1",
-    "Name 2",
-    "Name 3",
-    "Name 4",
-  )
-)
+## Konzept
 
-...
+Der Kern von `quick-asta` ist eine **zentrale Personendatenbank** (`asta-db.typ`), die einmal pro Semester gepflegt wird. Protokolldateien sind dadurch minimal: Man gibt nur Kürzel an, der Rest wird automatisch aufgelöst.
 
 ```
+/seb: Weist auf Präsidiumsgespräche hin.
+→ Sebastian Müller (Café Glaskasten): Weist auf Präsidiumsgespräche hin.
+```
 
-[Commands](#commands)\
-[Formats](#formats)
+---
 
-### Parameters
+## Dateistruktur
 
-| | name | explaination | default | type |
-|---|---|---|---|---|
-| required |
-||
-|| body-name | Name of the body holding the recorded meeting | `none` | `string`
-|| event-name | Name of the meeting | `none` | `string`
-|| date | Date of the meeting (`auto` for current date, datetime for formatted date) | `none` | `string, auto, datetime`
-|| present | List with names of people present at the meeting | `()` | list
-|| not-voting | List with names of people present, but without right to vote (they will not be counted in the present totals). Add a descriptor after a `\|` to replace the default indicator in the document head | `()` | list
-|| chairperson | Name of the person chairing the meeting<br>Can be a `list` of people | `none` | `string`, `list(string)`
-|| secretary | Name of the person taking minutes<br>Can be a `list` of people | `none` | `string`, `list(string)`
-| optional |
-||
-|| location | Location of the meeting | `none` | `string`
-|| awareness | Name of the person responsible for awareness<br>Can be a `list` of people | `none` | `string`, `list(string)`
-|| translation | Name of the person responsible for translating<br>Can be a `list` of people | `none` | `string`, `list(string)`
-|| cosigner | Position of the Person signing the protocol, should they differ from the chairperson | `none` | `string`
-|| cosigner-name | Name of the person signing the protocol, should they differ from the chairperson | `none` | `string`
-| customisation |
-||
-|| logo | Logo of the body holding the meeting | `none` | `image`
-|| custom-header | Custom Header<br><br>Arguments:<br>(date, body-name, event-name, translate)<br><br>Set to `none` for empty header | `auto` | `function(content, content, content, function(string, ..string))`, `auto`
-|| custom-footer | Custom Footer<br><br>Arguments:<br>(current-page, page-count, translate)<br><br>Set to `none` for empty footer<br><br>Is called inside of `context` | `auto` | `function(int, int, function(string, ..string))`, `auto`
-|| custom-background | Custom Background<br><br>Arguments:<br>(hole-mark)<br><br>Set to `none` for empty background | `auto` | `function(bool)`, `auto`
-|| custom-head-section | Custom Head Section<br><br>Arguments:<br>(location, chairperson, secretary, awareness, translation, present, present-count, start-time, end-time, translate, four-digits-to-time)<br><br>Set to `none` for empty head section<br><br>Handle start-time & end-time like this:<br><pre>let start-time = start-time.final()<br>if (start-time != none) [\*#translate("START")\*: #four-digits-to-time(start-time)\ ] | `auto` | `function(content, content, content/none, content/none, content, int/none, state, state, function(string, ..string), function(string))`, `auto`
-|| custom-name-format | Formatting of names in the document | <pre>(first-name, last-name, numbered, type-id) => [<br>&nbsp;#if (numbered) [#first-name #last-name] else [<br>&nbsp;&nbsp;#if (last-name != none) [#last-name, ]#first-name]<br>]</pre> `type-id`: Informs about the use of the name. Can be "dialogue", "header", "status", "signature" or "warning" | `function(string, string, bool, string)`
-|| custom-name-style | Style of names in the document | <pre>(name, type-id) => [name]</pre> `type-id`: Informs about the use of the name. Can be "dialogue", "header", "status", "signature" or "warning" | `function(string, string)`
-|| item-numbering | Numbering of items. Reverts to `DEFAULT_ITEM_NUMBERING` if `none`.  | `none` | `function(..int)`
-|| time-format | Datetime format `string` for times taken. Reverts to `DEFAULT_TIME_FORMAT` if `none`. | `none` | `string`
-|| date-format | Datetime format `string` for the date of the event. Reverts to `DEFAULT_DATE_FORMAT` if `none`.| `none` | `string`
-|| timestamp-margin | Size of gutter between timestamps and text | `10pt` | `length`<br>(static (pt, cm ...) recommended)
-|| line-numbering | `none` for no line numbering, `int` for every xth line numbered | `5` | `int`
-|| fancy-decisions | Draws a diagram underneath decisions | `false` | `bool`
-|| indent-decisions | Indents decisions | `true` | `bool`
-|| fancy-dialogue | Splits dialogue up into paragraphs | `false` | `bool`
-|| hole-mark | Draws a mark for the alignment of a hole punch | `true` | `bool`
-|| separator-lines | Draws lines next to the titles | `true` | `bool`
-|| margin | Sets the margin of the document | `(left: 4cm, right: 2cm, top: 3cm, bottom: 6cm)` | `dictionary`
-|| font-size | The font size of the body text | `10pt` | `length`,
-|| font-size-title | The font size of the titles. Based on the body text font size ( x 1.2) | `auto` | `length`,
-|| font-size-time | The font size of the timestamps. Based on the body text font size ( x 1) | `auto` | `length`,
-|| font-size-line-number | The font size of the line numbers. Based on the body text font size ( x 0.8) | `auto` | `length`,
-|| signing | Do people have to sign this document? | `true` | `bool`
-|| title-page | Should the actual protocol start after a `pagebreak`? | `false` | `bool`
-|| number-present | Should the number of people present be shown? | `false` | `bool`
-|| show-arrival-time | Should the time of arrival be schown in the list of people present? | `true` | `bool`
-|| locale | language of the document | `"en"`| `string`
-|| translation-overrides | [Translation](lang.json) Overrides | `(:)` | `dictionary`
-|| custom-royalty-connectors | Additional `list` of surname beginnings like "von".<br>Already recognises "von", "von der" & "de" | `()` | `list`
-| debug | 
-||
-|| display-all-warnings | Shows all warnings directly beneath their occurence | `false` | `bool`
-|| hide-warnings | Hides all warnings | `false` | `bool`
-|| warning-color | Color warnings are displayed in | `red` | `color`
-|| help-text-color | Color the help text is displayed in | `blue` | `color`
-|| enable-help-text | Should a help/debug text with state info be shown? | `false` | `bool`
+```
+quick-asta/
+├── asta-minutes.typ          # Haupttemplate
+├── asta-db.typ               # Zentrale Personendatenbank (Beispieldaten WiSe 2025/26)
+├── typst.toml                # Paketmetadaten
+├── LICENSE.txt               # MIT
+├── README.md                 # Diese Datei
+└── template/
+    ├── main.typ              # Startvorlage für ein neues Protokoll
+    └── asta-db-template.typ  # Leere DB-Vorlage für ein neues Semester
+```
 
-### Commands
+---
 
-| name | format | description |
-|---|---|---|
-Join | <pre>+(\<time>/)?\<name><br>++(\<time>/)?\<name> | Marks the arrival of someone<br>+: Come back from pause etc.<br>++: Arrive at event<br><br>_Time is optional_
-Leave | <pre>-(\<time>/)?\<name><br>--(\<time>/)?\<name> | Marks the departure of someone.<br>-: Leave into pause etc.<br>--: Leave event<br><br>_Time is optional_
-Time | <pre>\<time>/\<text> | Time the following text
-Mark Name | <pre>/\<name> | Marks following name
-Vote | <pre>!(\<time>/)?\<text>/\<vote>/\<vote>... | Vote on something (described in text)<br><br>/\<vote> can be repeated as many times as needed (min. 2)<br>3 unnamed & uncolored votes will result in a "For" (green), "Against" (red), "Abstain" (blue) vote<br><br>If you want to use `/` inside of a label or the text, you can use `-/` to escape into a normal `/`<br><br>_Time is optional_
-Dialogue | <pre>\<name>: \<text> | Marks that someone is speaking<br><br>Can be escaped with a `-` (`<name>-:`) to avoid restructuring
-End | <pre>/\<time> | End of the meeting.<br><br>Replace \<time> with `"end"` if you dont want to set a time |
+## Quickstart
 
-### Formats
+### 1. Datenbankdatei anlegen (1x pro Semester)
 
-| name | format | example |
-|---|---|---|
-\<vote> | <pre>\<label>(\|\<color>)?\<count> | `First Party\|green42`<br>`Third choice22`
-\<time> | 1-4 numbers | `1312` -> 01:12 pm<br>`650` -> 06:50 pm<br>`21`-> last timed hour:21 (pm/am)<br>`4`-> last timed hour:04 (pm/am)
-\<name> | Name in various formats | `Last Name, First Name`<br>`First Name Last Name`<br>`First Name`<br>`Last Name`<br>`First Name L`<br>`F Last Name`<br>`FL`<br><br>Last name can also start with a royalty connector like "de" or "von"<br><br>`Name 1`,`Name 2` will render with the number after the name, but the number is handled as a last name.<br><br>If you just want your name formatted by `custom-name-style` you can escape the restructuring process with a `-` (`/-<name>`).
+Kopiere `template/asta-db-template.typ` als `asta-db.typ` in dein Projektverzeichnis und fülle sie mit den aktuellen Personen:
+
+```typ
+// asta-db.typ
+#let semester = "WiSe 2025/26"
+
+#let referate = (
+  finanzen: (
+    referat: "Ref. Finanzen",
+    personen: (
+      (vorname: "Ahmed", nachname: "Khan", kuerzel: "ahmed"),
+    ),
+  ),
+  // ...
+)
+
+#let ags = (
+  glaskasten: (
+    name: "Café Glaskasten",
+    personen: (
+      (vorname: "Sebastian", nachname: "Müller", kuerzel: "seb"),
+    ),
+  ),
+  // ...
+)
+
+#let geschaeftsstelle = (
+  personen: (
+    (vorname: "Anke", nachname: "Fischer", kuerzel: "anke"),
+  ),
+)
+```
+
+**Wichtig:** Jedes `kuerzel` muss **eindeutig** sein. Bei Mehrdeutigkeiten wird eine Warnung ausgegeben.
+
+### 2. Protokolldatei erstellen
+
+Kopiere `template/main.typ` und passe die Parameter an:
+
+```typ
+#import "asta-db.typ": *
+#import "asta-minutes.typ": asta-minutes
+
+#show: asta-minutes.with(
+  db: (referate: referate, ags: ags),
+  geschaeftsstelle: geschaeftsstelle,
+  date: datetime(year: 2025, month: 10, day: 28),
+  location: "Online",
+  protokollant: "anke",        // Kürzel aus DB
+
+  anwesend: (
+    "hochschulpolitik", "digitales", "finanzen", "dieburg",
+    "fachschaften", "nachhaltigkeit", "vielfalt", "eut",
+    "soziales", "international", "kultur",
+  ),
+  entschuldigt: (),
+  ags-anwesend: ("glaskasten", "event", "design"),
+  gaeste: ("Vito (IJV)", "Nikolai"),
+)
+
+1838/
+
+= Protokollgenehmigung
+!Protokoll 14.10./einstimmig
+
+= Anträge & Finanzanträge
+!Verpflegung bis 300 EUR/einstimmig
+
+/2200
+```
+
+### 3. Kompilieren
+
+```bash
+typst compile protokoll-2025-10-28.typ
+```
+
+---
+
+## Parameter
+
+### Pflichtfelder
+
+| Parameter | Typ | Beschreibung |
+|-----------|-----|--------------|
+| `db` | dict | `(referate: referate, ags: ags)` aus asta-db.typ |
+| `date` | `datetime` | Datum der Sitzung |
+| `location` | string | Ort der Sitzung |
+| `protokollant` | string | Kürzel aus DB, oder Freitext mit führendem `-` |
+
+### Anwesenheit
+
+| Parameter | Typ | Beschreibung |
+|-----------|-----|--------------|
+| `anwesend` | array | Kürzel der anwesenden Referate |
+| `entschuldigt` | array | Kürzel der entschuldigten Referate |
+| `ags-anwesend` | array | Kürzel der anwesenden AGs/Cafés |
+| `gaeste` | array | Externe Gäst\*innen (Freitext) |
+
+Referate, die weder in `anwesend` noch in `entschuldigt` stehen, werden automatisch als **unentschuldigt** gelistet.
+
+### Optionale Parameter
+
+| Parameter | Standard | Beschreibung |
+|-----------|----------|--------------|
+| `sitzungsleitung` | `none` | Kürzel oder Freitext |
+| `geschaeftsstelle` | `none` | `geschaeftsstelle` aus asta-db.typ |
+| `logo` | `none` | `image("logo.png")` |
+| `name-format` | `"full"` | `"full"` · `"short"` · `"first"` |
+| `formal` | `false` | `true` = formaler Footer mit Adressen |
+| `signing` | `false` | Unterschriftenzeile am Ende |
+| `line-numbering` | `none` | z.B. `5` für jede 5. Zeile |
+| `fancy-decisions` | `false` | Abstimmungsbalken statt Text |
+| `hole-mark` | `true` | Lochmarke links |
+| `separator-lines` | `true` | Trennlinien bei Level-1-Überschriften |
+| `hide-warnings` | `false` | Warnungen unterdrücken |
+
+---
+
+## Kommandos im Protokolltext
+
+### Zeitstempel
+
+```typ
+1838/                          → Setzt die aktuelle Zeit auf 18:38 (unsichtbar)
+1838/ Alle erschienen          → Zeitstempel mit Text
+```
+
+### Abstimmungen
+
+```typ
+!Antrag XYZ/einstimmig        → "einstimmig angenommen"
+!Antrag XYZ/9/0/2             → "Dafür: 9, Dagegen: 0, Enthaltung: 2"
+!Antrag XYZ/Ja 9/Enthaltung 2 → "Ja: 9, Enthaltung: 2"
+!1930/Antrag XYZ/9/0/2        → mit Zeitstempel 19:30
+```
+
+### Referate kommen/gehen
+
+```typ
+++1930/vielfalt               → Ref. Vielfalt meldet sich an (11 von 12 stimmberechtigt)
+--2015/dieburg                → Ref. Campus Dieburg verlässt die Sitzung (10 von 12 stimmberechtigt)
++/vielfalt                    → Ref. Vielfalt kommt zurück
+-/dieburg                     → Ref. Campus Dieburg geht kurz
+```
+
+`++`/`--` = dauerhaft (Sitzung betreten/verlassen); `+`/`-` = kurzzeitig (Pause).
+
+### Namenserkennung (Kürzel)
+
+```typ
+/seb: Macht einen Vorschlag.
+→ Sebastian Müller (Café Glaskasten): Macht einen Vorschlag.
+
+/mariia wird das übernehmen.
+→ Mariia Ivanova (Ref. Fachschaften) wird das übernehmen.
+```
+
+Kürzel bestehen aus Kleinbuchstaben und Ziffern. Unbekannte Kürzel werden rot markiert und erzeugen eine Warnung.
+
+**Namensformat** (Parameter `name-format`):
+- `"full"` → `"Vorname Nachname (Funktion)"` (Standard)
+- `"short"` → `"Vorname (Funktion)"`
+- `"first"` → `"Vorname"`
+
+Freitext-Namen (nicht in DB) mit führendem `-` schützen: `/-Externe Person`.
+
+### Sitzungsende
+
+```typ
+/end                          → Ende der Sitzung (letzte bekannte Zeit)
+/2200                         → Ende der Sitzung um 22:00
+```
+
+### Nichtöffentlicher Sitzungsteil
+
+```typ
+==== Nichtöffentlicher AStA-Sitzungsteil
+```
+
+Erzeugt eine Trennlinie, erscheint **nicht** im Inhaltsverzeichnis.
+
+---
+
+## Protokollkopf
+
+Wird automatisch aus DB + Anwesenheitslisten generiert:
+
+```
+┌──────────────────────┬──────────────────┬──────────────┬─────────────────────┐
+│ Anwesend AStA:       │ Anwesend AGs:    │ Entschuldigt:│ Unentschuldigt:     │
+│ • Ref. Hochschul-    │ • Café Glaskasten│ (keine)      │ • Ref. Hochschul-   │
+│   politik            │ • AG Eventmgmt.  │              │   demokratie        │
+│ • Ref. Digitales     │ • AG Design      │              │                     │
+└──────────────────────┴──────────────────┴──────────────┴─────────────────────┘
+Gäst*innen: Vito (IJV), Nikolai, Benita
+Protokoll: Anke Fischer (Geschäftsstelle)
+Beschlussfähig: 11 von 12 Referaten anwesend
+```
+
+**Beschlussfähigkeit:** mehr als 50 % der Referate müssen anwesend sein. Bei Unterschreitung erscheint eine Warnung.
+
+---
+
+## DB-Verwaltung: Semester-Update
+
+1. `template/asta-db-template.typ` kopieren → `asta-db.typ` im Projektverzeichnis
+2. `semester` aktualisieren
+3. Für jedes Referat/jede AG: aktuelle Personen eintragen
+4. Alle Protokolle des neuen Semesters importieren die neue DB
+
+---
+
+## Warnungen
+
+Am Ende des Dokuments erscheinen automatische Warnungen für:
+- Unbekannte oder mehrdeutige Kürzel
+- Nicht beschlussfähige Sitzung
+- Fehlende Pflichtparameter
+- Ungültige Zeitangaben
+
+Mit `hide-warnings: true` können Warnungen unterdrückt werden.
+
+---
+
+## Lizenz & Credits
+
+MIT License – Fork von [quick-minutes](https://github.com/Lypsilonx/quick-minutes) von Katharina Thöle & Lyx Rothböck.

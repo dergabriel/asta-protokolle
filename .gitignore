@@ -1,0 +1,19 @@
+# ════════════════════════════════════════════════════════
+# DATENSCHUTZ – Diese Dateien werden NIE auf GitHub geladen
+# Gilt auch wenn man versehentlich "git add ." ausführt.
+# ════════════════════════════════════════════════════════
+
+# Alle Semesterordner mit echten Protokollen und Personendaten
+protokolle-*/
+
+# Personendatenbank (wo immer sie liegt)
+**/asta-db.typ
+
+# Einzelne Protokolldateien (zur Sicherheit auch außerhalb von protokolle-*/)
+protokoll-*.typ
+
+# Kompilierte PDFs (können Personendaten enthalten)
+*.pdf
+
+# Typst-Cache
+.typst/
