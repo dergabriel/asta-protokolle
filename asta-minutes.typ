@@ -545,20 +545,20 @@
         names-list(entschuldigt-parsed.map(e => ref-list-entry(e.at(0), person-kuerzel: e.at(1))))
       },
 
-      [*Unentschuldigt:*],
-      if unentschuldigt.len() == 0 [_(keine)_] else {
-        names-list(unentschuldigt.map(ref-list-entry))
-      },
+//      [*Unentschuldigt:*],
+//      if unentschuldigt.len() == 0 [_(keine)_] else {
+//        names-list(unentschuldigt.map(ref-list-entry))
+//      },
 
       [*Entsch. (o. SR):*],
       if ags-gew-entschuldigt.len() == 0 [_(keine)_] else {
         names-list(ags-gew-entschuldigt.map(ref-list-entry))
       },
 
-      [*Unentsch. (o. SR):*],
-      if ags-gew-unentschuldigt.len() == 0 [_(keine)_] else {
-        names-list(ags-gew-unentschuldigt.map(ref-list-entry))
-      },
+//      [*Unentsch. (o. SR):*],
+//      if ags-gew-unentschuldigt.len() == 0 [_(keine)_] else {
+//        names-list(ags-gew-unentschuldigt.map(ref-list-entry))
+  //    },
 
       [*Gäst\*innen:*],
       if gaeste.len() == 0 [_(keine)_] else {
@@ -638,7 +638,8 @@
     },
   )
 
-  set text(font-size, lang: locale)
+  set text(font-size, lang: locale, font: "HDA DIN Office", weight: "regular")
+  show strong: it => text(font: "HDA DIN Office", weight: "bold")[#it.body]
   set par(justify: true)
   show link: it => text(fill: blue)[#it]
 
@@ -695,6 +696,7 @@
 
     let h-block = if time == none { h } else { timed(time, h) }
     [
+      #if it.level <= 3 { v(1em, weak: true) }
       #if separator-lines and (it.level == 1 or it.level == 4) {
         grid(
           columns: (auto, 1fr),
@@ -806,16 +808,16 @@
 
     // Einstimmig-Sonderfall
     if raw-args.len() == 1 and raw-args.at(0).trim() == "einstimmig" {
-      v(2em, weak: true)
-      block(breakable: false, inset: (left: if indent-decisions { 2em } else { 0pt }))[
-        ===== Abstimmung #vote-text
+      let dec-block = block(breakable: false, inset: (left: if indent-decisions { 2em } else { 0pt }))[
+        ===== Abstimmung: #vote-text
         #if vote-beschluss != none [
           #v(0.2em)
           #emph[Beschluss: #vote-beschluss]
         ]
-        #v(0.3em)
-        *einstimmig angenommen*
+        #block(fill: green.transparentize(80%), inset: 0.5em, width: 100%)[*Einstimmig angenommen*]
       ]
+      v(2em, weak: true)
+      if vote-time != none { timed(vote-time, dec-block) } else { dec-block }
       v(2em, weak: true)
     } else {
       // Numerische Abstimmung: 9/0/2 → Dafür/Dagegen/Enthaltungen

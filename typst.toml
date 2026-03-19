@@ -12,6 +12,9 @@ name = "quick-asta"
 repository = "https://github.com/Lypsilonx/quick-minutes"
 version = "0.1.0"
 
+[workspace]
+font-paths = ["font"]
+
 [template]
 entrypoint = "main.typ"
 path = "template"

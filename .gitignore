@@ -17,3 +17,6 @@ protokoll-*.typ
 
 # Typst-Cache
 .typst/
+
+# macOS
+.DS_Store
