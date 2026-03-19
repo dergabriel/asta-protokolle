@@ -529,12 +529,12 @@
       stroke: 0.3pt,
       inset: (x: 0.6em, y: 0.4em),
 
-      [*Anwesend AStA:*],
+      [*Anwesend AStA Referate:*],
       if anwesend-parsed.len() == 0 [_(keine)_] else {
         names-list(anwesend-parsed.map(e => ref-list-entry(e.at(0), person-kuerzel: e.at(1))))
       },
 
-      [*Gewerblich / AGs:*],
+      [*Anwesend Gewerblich / AGs:*],
       {
         let gew-ag = gewerbliche-anwesend.map(k => ref-list-entry(k)) + ags-anwesend.map(k => ref-list-entry(k))
         if gew-ag.len() == 0 [_(keine)_] else { names-list(gew-ag) }
@@ -545,22 +545,22 @@
         names-list(entschuldigt-parsed.map(e => ref-list-entry(e.at(0), person-kuerzel: e.at(1))))
       },
 
-//      [*Unentschuldigt:*],
-//      if unentschuldigt.len() == 0 [_(keine)_] else {
-//        names-list(unentschuldigt.map(ref-list-entry))
-//      },
+      [*Nicht anwesend:*],
+      if unentschuldigt.len() == 0 [_(keine)_] else {
+        names-list(unentschuldigt.map(ref-list-entry))
+      },
 
-      [*Entsch. (o. SR):*],
+      [*Entschuldigt* (o. SR):],
       if ags-gew-entschuldigt.len() == 0 [_(keine)_] else {
         names-list(ags-gew-entschuldigt.map(ref-list-entry))
       },
 
-//      [*Unentsch. (o. SR):*],
-//      if ags-gew-unentschuldigt.len() == 0 [_(keine)_] else {
-//        names-list(ags-gew-unentschuldigt.map(ref-list-entry))
+  //   [*Fehlt (ohne SR):*],
+  //    if ags-gew-unentschuldigt.len() == 0 [_(keine)_] else {
+  //     names-list(ags-gew-unentschuldigt.map(ref-list-entry))
   //    },
 
-      [*Gäst\*innen:*],
+      [*Gäste*],
       if gaeste.len() == 0 [_(keine)_] else {
         names-list(gaeste.map(format-gast))
       },
@@ -690,7 +690,7 @@
     let h = heading(
       "\u{200B}" + title,
       level: it.level,
-      outlined: it.level != 4,
+      outlined: it.level <= 3,
       numbering: if it.level >= 4 { none } else { it.numbering },
     )
 
