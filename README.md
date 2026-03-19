@@ -11,8 +11,8 @@ Fork von [quick-minutes](https://github.com/Lypsilonx/quick-minutes) (v1.2.4) �
 Der Kern von `quick-asta` ist eine **zentrale Personendatenbank** (`asta-db.typ`), die einmal pro Semester gepflegt wird. Protokolldateien sind dadurch minimal: Man gibt nur Kürzel an, der Rest wird automatisch aufgelöst.
 
 ```
-/seb: Weist auf Präsidiumsgespräche hin.
-→ Sebastian Müller (Café Glaskasten): Weist auf Präsidiumsgespräche hin.
+/max: Weist auf Präsidiumsgespräche hin.
+→ Max Bergmann (Café Glaskasten): Weist auf Präsidiumsgespräche hin.
 ```
 
 ---
@@ -47,7 +47,7 @@ Kopiere `template/asta-db-template.typ` als `asta-db.typ` in dein Projektverzeic
   finanzen: (
     referat: "Ref. Finanzen",
     personen: (
-      (vorname: "Ahmed", nachname: "Khan", kuerzel: "ahmed"),
+      (vorname: "Laura", nachname: "Schneider", kuerzel: "laura"),
     ),
   ),
   // ...
@@ -57,7 +57,7 @@ Kopiere `template/asta-db-template.typ` als `asta-db.typ` in dein Projektverzeic
   glaskasten: (
     name: "Café Glaskasten",
     personen: (
-      (vorname: "Sebastian", nachname: "Müller", kuerzel: "seb"),
+      (vorname: "Max", nachname: "Bergmann", kuerzel: "max"),
     ),
   ),
   // ...
@@ -65,7 +65,7 @@ Kopiere `template/asta-db-template.typ` als `asta-db.typ` in dein Projektverzeic
 
 #let geschaeftsstelle = (
   personen: (
-    (vorname: "Anke", nachname: "Fischer", kuerzel: "anke"),
+    (vorname: "Sara", nachname: "Hoffmann", kuerzel: "sara"),
   ),
 )
 ```
@@ -85,7 +85,7 @@ Kopiere `template/main.typ` und passe die Parameter an:
   geschaeftsstelle: geschaeftsstelle,
   date: datetime(year: 2025, month: 10, day: 28),
   location: "Online",
-  protokollant: "anke",        // Kürzel aus DB
+  protokollant: "sara",        // Kürzel aus DB
 
   anwesend: (
     "hochschulpolitik", "digitales", "finanzen", "dieburg",
@@ -94,7 +94,7 @@ Kopiere `template/main.typ` und passe die Parameter an:
   ),
   entschuldigt: (),
   ags-anwesend: ("glaskasten", "event", "design"),
-  gaeste: ("Vito (IJV)", "Nikolai"),
+  gaeste: ("Tom (IJV)", "Julia"),
 )
 
 1838/
@@ -188,11 +188,11 @@ Referate, die weder in `anwesend` noch in `entschuldigt` stehen, werden automati
 ### Namenserkennung (Kürzel)
 
 ```typ
-/seb: Macht einen Vorschlag.
-→ Sebastian Müller (Café Glaskasten): Macht einen Vorschlag.
+/max: Macht einen Vorschlag.
+→ Max Bergmann (Café Glaskasten): Macht einen Vorschlag.
 
-/mariia wird das übernehmen.
-→ Mariia Ivanova (Ref. Fachschaften) wird das übernehmen.
+/lisa wird das übernehmen.
+→ Lisa Wagner (Ref. Fachschaften) wird das übernehmen.
 ```
 
 Kürzel bestehen aus Kleinbuchstaben und Ziffern. Unbekannte Kürzel werden rot markiert und erzeugen eine Warnung.
@@ -232,8 +232,8 @@ Wird automatisch aus DB + Anwesenheitslisten generiert:
 │   politik            │ • AG Eventmgmt.  │              │   demokratie        │
 │ • Ref. Digitales     │ • AG Design      │              │                     │
 └──────────────────────┴──────────────────┴──────────────┴─────────────────────┘
-Gäst*innen: Vito (IJV), Nikolai, Benita
-Protokoll: Anke Fischer (Geschäftsstelle)
+Gäst*innen: Tom (IJV), Julia, Marie
+Protokoll: Sara Hoffmann (Geschäftsstelle)
 Beschlussfähig: 11 von 12 Referaten anwesend
 ```
 
