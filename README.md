@@ -94,7 +94,7 @@ Kopiere `template/main.typ` und passe die Parameter an:
   ),
   entschuldigt: (),
   ags-anwesend: ("glaskasten", "event", "design"),
-  gaeste: ("Tom (IJV)", "Julia"),
+  gaeste: ("Tom (Musterorganisation)", "Julia"),
 )
 
 1838/
@@ -232,7 +232,7 @@ Wird automatisch aus DB + Anwesenheitslisten generiert:
 │   politik            │ • AG Eventmgmt.  │              │   demokratie        │
 │ • Ref. Digitales     │ • AG Design      │              │                     │
 └──────────────────────┴──────────────────┴──────────────┴─────────────────────┘
-Gäst*innen: Tom (IJV), Julia, Marie
+Gäst*innen: Tom (Musterorganisation), Julia, Marie
 Protokoll: Sara Hoffmann (Geschäftsstelle)
 Beschlussfähig: 11 von 12 Referaten anwesend
 ```
